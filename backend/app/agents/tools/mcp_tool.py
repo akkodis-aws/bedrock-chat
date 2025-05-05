@@ -276,7 +276,51 @@ def _mcp_tool_function(
     """
     # This would be implemented to retrieve the MCP config and call the client
     # For now, we'll return a placeholder response
-    result = {
+# MCP Tool implementation
+async def _mcp_tool_function(
+    args: MCPToolInput,
+    bot: Optional[BotModel] = None,
+    model_name: Optional[type_model_name] = None,
+) -> ToolFunctionResult:
+    """
+    Execute the MCP tool function
+    
+    Args:
+        args: MCPToolInput - The input parameters for the MCP tool
+        bot: Optional[BotModel] - The bot model if available
+        model_name: Optional[type_model_name] - The model name if available
+        
+    Returns:
+        ToolFunctionResult - The result of the tool execution
+    """
+    # TODO: Implement function to retrieve MCP config based on provider_id
+    config = await get_mcp_config(args.provider_id)
+    
+    # TODO: Implement function to get user_id from bot or model_name
+    user_id = get_user_id(bot, model_name)
+    
+    # TODO: Implement function to get access token for the user and provider
+    access_token = await get_access_token(user_id, args.provider_id)
+    
+    client = MCPClient(config, access_token)
+    
+    try:
+        result = await client.query(args.query, args.additional_context, user_id)
+    except Exception as e:
+        logger.error(f"Error querying MCP provider: {str(e)}")
+        return JsonToolResultModel(
+            json_string=json.dumps({"error": str(e)}),
+            content_for_human=f"Error querying MCP provider '{args.provider_id}': {str(e)}"
+        )
+    
+    # Return the result as a JsonToolResultModel
+    return JsonToolResultModel(
+        json_string=json.dumps(result),
+        content_for_human=f"Retrieved information from MCP provider '{args.provider_id}':
+{result['content']}"
+    )
+
+# Create the MCP tool instance
         "status": "success",
         "content": f"MCP result for query: {args.query}",
         "provider": args.provider_id
