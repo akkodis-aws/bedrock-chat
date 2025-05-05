@@ -225,7 +225,17 @@ accumulated_data = []
         if additional_context:
             data["context"] = additional_context
             
-        return await self._make_request("query", data, user_id)
+if additional_context:
+            data["context"] = additional_context
+            
+        try:
+            return await self._make_request("query", data, user_id)
+        except Exception as e:
+            logger.error(f"Error during MCP query: {str(e)}")
+            return {"error": "An error occurred during the MCP query", "details": str(e)}
+
+# OAuth token storage
+class OAuthTokenStorage:
 
 # OAuth token storage
 class OAuthTokenStorage:
