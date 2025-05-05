@@ -142,7 +142,34 @@ class MCPClient:
         accumulated_data = []
         metadata = {}
         
-        async for line in response.aiter_lines():
+accumulated_data = []
+        metadata = {}
+        
+        try:
+            async for line in response.aiter_lines():
+                if not line or line.isspace():
+                    continue
+                    
+                if line.startswith('data: '):
+                    data_str = line[6:]  # Remove 'data: ' prefix
+                    try:
+                        event_data = json.loads(data_str)
+                        if "type" in event_data:
+                            if event_data["type"] == "content":
+                                # Content event - append to accumulated data
+                                accumulated_data.append(event_data.get("content", ""))
+                            elif event_data["type"] == "metadata":
+                                # Metadata event - store in metadata dict
+                                metadata.update(event_data.get("metadata", {}))
+                    except json.JSONDecodeError:
+                        # If it's not JSON, treat as plain text content
+                        accumulated_data.append(data_str)
+        except httpx.ReadError as e:
+            logger.error(f"Error reading SSE stream: {str(e)}")
+            raise Exception(f"Error reading SSE stream: {str(e)}")
+                    
+        # Combine accumulated content
+        combined_content = "".join(accumulated_data)
             if not line or line.isspace():
                 continue
                 
