@@ -97,7 +97,14 @@ class MCPClient:
         Returns:
             Dict[str, Any]: The response data
         """
-        url = f"{self.config.endpoint_url}/{endpoint.lstrip('/')}"
+Returns:
+            Dict[str, Any]: The response data
+        """
+        # import urllib.parse
+        url = f"{self.config.endpoint_url}/{urllib.parse.quote(endpoint.lstrip('/'))})"
+        
+        headers = {
+            "Content-Type": "application/json",
         
         headers = {
             "Content-Type": "application/json",
