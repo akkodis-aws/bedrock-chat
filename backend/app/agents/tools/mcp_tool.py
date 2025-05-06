@@ -345,7 +345,30 @@ async def _mcp_tool_function(
         return JsonToolResultModel(
     config = await get_mcp_config(args.provider_id)
     
-    # TODO: Implement function to get user_id from bot or model_name
+# Implement function to retrieve MCP config based on provider_id
+    config = await get_mcp_config(args.provider_id)
+    
+    # Get user_id from bot or model_name
+    user_id = get_user_id(bot, model_name)
+    
+    # Get access token for the user and provider
+    access_token = await get_access_token(user_id, args.provider_id)
+    
+    client = MCPClient(config, access_token)
+    
+    try:
+        # Sanitize and validate input before using in query
+        sanitized_query = sanitize_query(args.query)
+        sanitized_context = sanitize_context(args.additional_context)
+        sanitized_user_id = sanitize_user_id(user_id)
+        
+        result = await client.query(sanitized_query, sanitized_context, sanitized_user_id)
+    except Exception as e:
+        logger.error(f"Error querying MCP provider: {str(e)}")
+        return JsonToolResultModel(
+            json_string=json.dumps({"error": str(e)}),
+            content_for_human=f"Error querying MCP provider '{args.provider_id}': {str(e)}"
+        )
     user_id = get_user_id(bot, model_name)
     
     # TODO: Implement function to get access token for the user and provider
