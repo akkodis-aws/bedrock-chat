@@ -354,7 +354,19 @@ async def _mcp_tool_function(
     client = MCPClient(config, access_token)
     
     try:
-        result = await client.query(args.query, args.additional_context, user_id)
+client = MCPClient(config, access_token)
+    
+    try:
+        # from bson.objectid import ObjectId  # Import ObjectId for MongoDB
+        # Sanitize and validate input before using in query
+        sanitized_query = sanitize_query(args.query)
+        sanitized_context = sanitize_context(args.additional_context)
+        sanitized_user_id = ObjectId(user_id) if isinstance(user_id, str) else user_id
+        
+        result = await client.query(sanitized_query, sanitized_context, sanitized_user_id)
+    except Exception as e:
+        logger.error(f"Error querying MCP provider: {str(e)}")
+        return JsonToolResultModel(
     except Exception as e:
         logger.error(f"Error querying MCP provider: {str(e)}")
         return JsonToolResultModel(
