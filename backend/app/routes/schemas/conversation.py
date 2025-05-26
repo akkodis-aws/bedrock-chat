@@ -6,6 +6,8 @@ from mypy_boto3_bedrock_runtime.literals import DocumentFormatType, ImageFormatT
 from pydantic import Discriminator, Field, JsonValue, root_validator
 
 type_model_name = Literal[
+    "claude-v4-opus",
+    "claude-v4-sonnet",
     "claude-v3.5-sonnet",
     "claude-v3.5-sonnet-v2",
     "claude-v3.7-sonnet",
@@ -211,12 +213,27 @@ class RelatedDocument(BaseSchema):
     page_number: int | None = None
 
 
+class SearchHighlight(BaseSchema):
+    """Schema representing highlight information for search results"""
+
+    field_name: str  # "Title" or "MessageMap"
+    fragments: list[str]  # Text fragments containing the search term
+
+
 class ConversationMetaOutput(BaseSchema):
     id: str
     title: str
     create_time: float
     model: str
     bot_id: str | None
+
+
+class ConversationSearchResult(BaseSchema):
+    id: str
+    title: str
+    last_updated_time: float
+    bot_id: str | None
+    highlights: list[SearchHighlight] | None = None
 
 
 class Conversation(BaseSchema):

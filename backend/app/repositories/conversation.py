@@ -4,6 +4,7 @@ import os
 from decimal import Decimal as decimal
 
 import boto3
+from typing import Dict
 from app.repositories.common import (
     TRANSACTION_BATCH_WRITE_SIZE,
     RecordNotFoundError,

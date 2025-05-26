@@ -20,6 +20,7 @@ import { TIdentityProvider, identityProvider } from "./utils/identity-provider";
 import { ApiPublishCodebuild } from "./constructs/api-publish-codebuild";
 import { WebAclForPublishedApi } from "./constructs/webacl-for-published-api";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as path from "path";
 import { BedrockCustomBotCodebuild } from "./constructs/bedrock-custom-bot-codebuild";
@@ -40,14 +41,16 @@ export interface BedrockChatStackProps extends StackProps {
   readonly selfSignUpEnabled: boolean;
   readonly enableIpV6: boolean;
   readonly documentBucket: Bucket;
-  readonly useStandbyReplicas: boolean;
+  readonly enableRagReplicas: boolean;
   readonly enableBedrockCrossRegionInference: boolean;
   readonly enableLambdaSnapStart: boolean;
   readonly enableBotStore: boolean;
+  readonly enableBotStoreReplicas: boolean;
   readonly botStoreLanguage: Language;
   readonly tokenValidMinutes: number;
   readonly alternateDomainName?: string;
   readonly hostedZoneId?: string;
+  readonly devAccessIamRoleArn?: string;
 }
 
 export class BedrockChatStack extends cdk.Stack {
@@ -173,8 +176,9 @@ export class BedrockChatStack extends cdk.Stack {
       botStore = new BotStore(this, "BotStore", {
         envPrefix: props.envPrefix,
         botTable: database.botTable,
-        useStandbyReplicas: props.useStandbyReplicas,
+        conversationTable: database.conversationTable,
         language: props.botStoreLanguage,
+        enableBotStoreReplicas: props.enableBotStoreReplicas,
       });
     }
 
@@ -198,9 +202,10 @@ export class BedrockChatStack extends cdk.Stack {
       enableBedrockCrossRegionInference:
         props.enableBedrockCrossRegionInference,
       enableLambdaSnapStart: props.enableLambdaSnapStart,
-      botStoreEndpoint: botStore?.openSearchEndpoint,
+      openSearchEndpoint: botStore?.openSearchEndpoint,
     });
     props.documentBucket.grantReadWrite(backendApi.handler);
+    // Add permissions to API handler for BotStore
     botStore?.addDataAccessPolicy(
       props.envPrefix,
       "DAPolicyApiHandler",
@@ -208,6 +213,31 @@ export class BedrockChatStack extends cdk.Stack {
       ["aoss:DescribeCollectionItems"],
       ["aoss:DescribeIndex", "aoss:ReadDocument"]
     );
+    
+    // Add data access policy for developers
+    // Get IAM user/role ARN from environment variables
+    if (props.devAccessIamRoleArn) {
+      // Access to BotStore
+      botStore?.addDataAccessPolicy(
+        props.envPrefix,
+        "DAPolicyDevAccess",
+        iam.Role.fromRoleArn(this, "DevAccessIamRoleArn", props.devAccessIamRoleArn),
+        [
+          "aoss:DescribeCollectionItems",
+          "aoss:CreateCollectionItems", 
+          "aoss:DeleteCollectionItems",
+          "aoss:UpdateCollectionItems"
+        ],
+        [
+          "aoss:DescribeIndex", 
+          "aoss:ReadDocument", 
+          "aoss:WriteDocument",
+          "aoss:CreateIndex",
+          "aoss:DeleteIndex",
+          "aoss:UpdateIndex"
+        ]
+      );
+    }
 
     // For streaming response
     const websocket = new WebSocket(this, "WebSocket", {
@@ -248,7 +278,7 @@ export class BedrockChatStack extends cdk.Stack {
       database,
       documentBucket: props.documentBucket,
       bedrockCustomBotProject: bedrockCustomBotCodebuild.project,
-      useStandbyReplicas: props.useStandbyReplicas,
+      enableRagReplicas: props.enableRagReplicas,
     });
 
     // WebAcl for published API

@@ -20,6 +20,16 @@ const translation: typeof en = {
       backChat: 'チャットに戻る',
     },
     model: {
+      'claude-v4-opus': {
+        label: 'Claude 4 (Opus)',
+        description:
+          '複雑なタスク、コーディング、AIエージェント向けの最も強力なハイブリッド推論モデル（200Kトークンコンテキストウィンドウ）',
+      },
+      'claude-v4-sonnet': {
+        label: 'Claude 4 (Sonnet)',
+        description:
+          '効率性とスケールを最適化したバランスの取れたハイブリッド推論モデル（200Kトークンコンテキストウィンドウ）',
+      },
       'claude-v3-haiku': {
         label: 'Claude 3 (Haiku)',
         description:
@@ -559,8 +569,8 @@ const translation: typeof en = {
       search: {
         placeholder: 'ボットを検索する',
         searching: '検索中...',
-        results: '"{{query}}"の検索結果：{{count}}件',
-        noResults: '"{{query}}"に一致する結果はありません',
+        results: '"{{query}}"にマッチするボットが{{count}}件見つかりました',
+        noResults: '"{{query}}"にマッチするボットは見つかりませんでした',
         tryDifferent: '別のキーワードで検索してください。',
         backToHome: 'ホームに戻る',
       },
@@ -588,7 +598,15 @@ const translation: typeof en = {
     conversationHistory: {
       pageTitle: 'チャット履歴',
       label: {
-        noConversations: 'チャット履歴がありません。',
+        noConversations: 'チャット履歴がありません',
+      },
+      searchConversation: {
+        placeholder: '会話を検索...',
+        searching: '検索中...',
+        results: ' "{{query}}"にマッチしたチャットが{{count}}件見つかりました',
+        noResults: '{{query}}にマッチするチャットが見つかりませんでした',
+        tryDifferentKeywords: '別のキーワードで試してください',
+        resultsCount: '{{count}}件の検索結果',
       },
     },
     deleteDialog: {
@@ -636,6 +654,7 @@ const translation: typeof en = {
     },
     button: {
       newChat: '新しいチャット',
+      backToConversationHistory: 'チャット履歴に戻る',
       botConsole: 'ボットコンソール',
       botAnalytics: 'ボット確認',
       apiManagement: 'API管理',

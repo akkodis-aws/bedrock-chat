@@ -16,6 +16,7 @@ from app.repositories.conversation import (
     store_conversation,
     store_related_documents,
 )
+from app.repositories.conversation_search import find_conversations_by_query
 from app.repositories.custom_bot import alias_exists, store_alias
 from app.repositories.models.conversation import (
     ConversationModel,
@@ -38,8 +39,11 @@ from app.routes.schemas.conversation import (
     ChatOutput,
     Chunk,
     Conversation,
+    ConversationMetaOutput,
+    ConversationSearchResult,
     FeedbackOutput,
     MessageOutput,
+    SearchHighlight,
     type_model_name,
 )
 from app.stream import ConverseApiStreamHandler, OnStopInput, OnThinking
@@ -648,4 +652,34 @@ def fetch_conversation(user_id: str, conversation_id: str) -> Conversation:
         bot_id=conversation.bot_id,
         should_continue=conversation.should_continue,
     )
+    return output
+
+
+def search_conversations(query: str, user: User) -> list[ConversationSearchResult]:
+    """Search conversations by keyword"""
+    conversations = find_conversations_by_query(query, user)
+    output = []
+
+    for conversation in conversations:
+        # Convert model SearchHighlightModel to schema SearchHighlight
+        schema_highlights = None
+        if conversation.highlights:
+            schema_highlights = [
+                SearchHighlight(
+                    field_name=highlight.field_name, fragments=highlight.fragments
+                )
+                for highlight in conversation.highlights
+            ]
+
+        # Create ConversationSearchResult with properly converted highlights
+        output.append(
+            ConversationSearchResult(
+                id=conversation.id,
+                title=conversation.title,
+                last_updated_time=conversation.last_updated_time,
+                bot_id=conversation.bot_id,
+                highlights=schema_highlights,
+            )
+        )
+
     return output

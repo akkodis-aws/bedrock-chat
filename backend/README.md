@@ -27,7 +27,42 @@ export DOCUMENT_BUCKET=bedrockchatstack-documentbucketxxxxxxx
 export LARGE_MESSAGE_BUCKET=bedrockchatstack-largemessagebucketxxx
 export USER_POOL_ID=xxxxxxxxx
 export CLIENT_ID=xxxxxxxxx
+export OPENSEARCH_DOMAIN_ENDPOINT=https://abcdefghijklmnopqrst.aa-region-1.aoss.amazonaws.com
 ```
+
+- Configure CDK configration.
+Local development requires OpenSearch data access permissions for the IAM role to be used. You can set this parameter in either `cdk/cdk.json` or `cdk/parameter.ts`.
+
+  This configuration grants the following permissions:
+
+  For the OpenSearch Collection:
+
+    ```
+    "aoss:DescribeCollectionItems",
+    "aoss:CreateCollectionItems", 
+    "aoss:DeleteCollectionItems",
+    "aoss:UpdateCollectionItems"
+    ```
+
+  For the index:
+
+    ```
+    "aoss:DescribeIndex", 
+    "aoss:ReadDocument", 
+    "aoss:WriteDocument",
+    "aoss:CreateIndex",
+    "aoss:DeleteIndex",
+    "aoss:UpdateIndex"
+    ```
+
+  Example in cdk/cdk.json:
+    ```
+    json 
+
+    {
+      "devAccessIamRoleArn": "arn:aws:iam::123456789012:role/<role name>"
+    }
+    ```
 
 ## Launch local server
 

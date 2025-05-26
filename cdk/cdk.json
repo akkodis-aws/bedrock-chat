@@ -71,9 +71,11 @@
     "enableBedrockCrossRegionInference": true,
     "enableLambdaSnapStart": true,
     "enableBotStore": true,
+    "enableBotStoreReplicas": false,
     "botStoreLanguage": "en",
     "tokenValidMinutes": 30,
     "alternateDomainName": "bedrockchat.poc.solutions.aws.akkodis.com",
-    "hostedZoneId": "Z0634712778OFKO9QR7M"
+    "hostedZoneId": "Z0634712778OFKO9QR7M",
+    "devAccessIamRoleArn": ""
   }
 }

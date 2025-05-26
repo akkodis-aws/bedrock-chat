@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Self, TypeGuard
 from urllib.parse import urlparse
 
+from app.repositories.common import decompose_conv_id
 from app.repositories.models.common import Base64EncodedBytes
 from app.routes.schemas.conversation import (
     AttachmentContent,
@@ -40,6 +42,9 @@ from pydantic import BaseModel, Discriminator, Field, JsonValue, field_validator
 
 if TYPE_CHECKING:
     from app.agents.tools.agent_tool import ToolRunResult
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class TextContentModel(BaseModel):

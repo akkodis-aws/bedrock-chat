@@ -13,8 +13,8 @@ ACCOUNT = os.environ.get("ACCOUNT", "")
 REGION = os.environ.get("REGION", "ap-northeast-1")
 TABLE_ACCESS_ROLE_ARN = os.environ.get("TABLE_ACCESS_ROLE_ARN", "")
 
-BOT_STORE_OPENSEARCH_DOMAIN_ENDPOINT = os.environ.get(
-    "BOT_STORE_OPENSEARCH_DOMAIN_ENDPOINT"
+OPENSEARCH_DOMAIN_ENDPOINT = os.environ.get(
+    "OPENSEARCH_DOMAIN_ENDPOINT",
 )
 
 # DynamoDB batch operation limits
@@ -173,10 +173,16 @@ def get_bot_table_client():
     )
 
 
-def get_opensearch_client() -> OpenSearch:
-    """Get OpenSearch client with AWS authentication."""
-    if not BOT_STORE_OPENSEARCH_DOMAIN_ENDPOINT:
-        raise ValueError("BOT_STORE_OPENSEARCH_DOMAIN_ENDPOINT is not set")
+def get_opensearch_client(collection_type: str = "bot") -> OpenSearch:
+    """Get OpenSearch client with AWS authentication.
+
+    Args:
+        collection_type: Type of collection to connect to ("bot" or "conversation")
+        Note: This method now uses a single shared endpoint for both bot and conversation collections
+    """
+    endpoint = OPENSEARCH_DOMAIN_ENDPOINT
+    if not endpoint:
+        raise ValueError("OPENSEARCH_DOMAIN_ENDPOINT is not set")
 
     # Get credentials from boto3
     credentials = boto3.Session().get_credentials()
@@ -190,7 +196,7 @@ def get_opensearch_client() -> OpenSearch:
     )
 
     # Omit https
-    host = BOT_STORE_OPENSEARCH_DOMAIN_ENDPOINT.replace("https://", "")
+    host = endpoint.replace("https://", "")
 
     client = OpenSearch(
         hosts=[{"host": host, "port": 443}],
