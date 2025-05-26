@@ -59,7 +59,7 @@
     ],
     "identityProviders": [],
     "userPoolDomainPrefix": "",
-    "allowedSignUpEmailDomains": [],
+    "allowedSignUpEmailDomains": ["akkodisgroup.com", "akkodis.com"],
     "autoJoinUserGroups": ["CreatingBotAllowed"],
     "selfSignUpEnabled": true,
     "publishedApiAllowedIpV4AddressRanges": ["0.0.0.0/1", "128.0.0.0/1"],
@@ -74,8 +74,8 @@
     "enableBotStoreReplicas": false,
     "botStoreLanguage": "en",
     "tokenValidMinutes": 30,
-    "alternateDomainName": "",
-    "hostedZoneId": "",
+    "alternateDomainName": "bedrockchat.poc.solutions.aws.akkodis.com",
+    "hostedZoneId": "Z0634712778OFKO9QR7M",
     "devAccessIamRoleArn": ""
   }
 }
