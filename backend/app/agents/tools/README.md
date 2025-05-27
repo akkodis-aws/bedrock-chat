@@ -5,52 +5,38 @@ This directory contains tools that can be used by agents to perform various task
 ## Available Tools
 
 ### Internet Search Tool
-
-The Internet Search tool allows agents to search the internet for information.
-
-### Bedrock Agent Tool
-
-The Bedrock Agent tool allows agents to interact with Amazon Bedrock Agents.
+The Internet Search Tool allows agents to search the internet for information.
 
 ### Word Document Tool
-
-The Word Document tool allows agents to convert text content to a Microsoft Word document for download.
+The Word Document Tool converts text content to a Microsoft Word document (.docx) format that can be downloaded by users.
 
 #### Usage
-
-To use the Word Document tool, provide the following input:
-
-```json
-{
-  "content": "The text content to be converted to a Word document.",
-  "title": "Optional title for the document",
-  "filename": "Optional filename for the document (without extension)"
-}
-```
-
-The tool will return a Word document (.docx) that can be downloaded by the user.
+To use the Word Document Tool, provide the following parameters:
+- `content`: The text content to be converted to a Word document
+- `title` (optional): The title for the document (defaults to "Generated Document")
 
 #### Example
+```
+I need to create a Word document with the following content:
 
-```python
-from app.agents.tools.word_document import WordDocumentInput, create_word_document
+Title: Project Proposal
+Content: 
+This is a project proposal for implementing a new feature.
 
-input_data = WordDocumentInput(
-    content="This is the content of my document.\nIt can have multiple paragraphs.",
-    title="My Document",
-    filename="my_document"
-)
+The feature will include:
+- Component A
+- Component B
+- Component C
 
-result = create_word_document(input_data, None, None)
-# result will be a DocumentToolResult containing the Word document as a base64-encoded string
+Timeline: 3 months
 ```
 
+The tool will generate a properly formatted Word document that can be downloaded by the user.
+
 ## Adding New Tools
-
 To add a new tool:
-
-1. Create a new Python file in this directory.
-2. Define a Pydantic model for the tool input.
-3. Implement a function to perform the tool's task.
-4. Create an `AgentTool` instance for the tool.
-5. Register the tool in `app/agents/utils.py`.
+1. Create a new Python file in this directory
+2. Define an input schema using Pydantic
+3. Implement the tool function
+4. Create an AgentTool instance
+5. Register the tool in `app/agents/utils.py`

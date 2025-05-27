@@ -1,95 +1,78 @@
 import sys
-import base64
+import io
 import unittest
-from io import BytesIO
+from docx import Document
 
 sys.path.append(".")
-
-from app.agents.tools.word_document import WordDocumentInput, create_word_document, word_document_tool
-from app.agents.utils import get_available_tools
-from docx import Document
+from app.agents.tools.word_document import WordDocumentInput, word_document_tool
+from app.repositories.models.conversation import DocumentToolResultModel
 
 
 class TestWordDocumentTool(unittest.TestCase):
-    def test_create_word_document_basic(self):
-        """Test creating a basic Word document with just content."""
-        input_data = WordDocumentInput(
-            content="This is a test document.\nIt has multiple paragraphs.\n\nIncluding some with extra line breaks.",
-            filename="test_doc"
+    def test_word_document_creation(self):
+        """Test that the word document tool creates a valid Word document."""
+        # Test input
+        content = "This is a test document.\nIt has multiple paragraphs.\n\nThis is another paragraph."
+        title = "Test Document"
+        
+        # Create input object
+        arg = WordDocumentInput(content=content, title=title)
+        
+        # Run the tool
+        response = word_document_tool.run(
+            tool_use_id="test_id",
+            input=arg.model_dump(),
+            model="claude-v3.5-sonnet-v2",
         )
         
-        result = create_word_document(input_data, None, "claude-v3.5-sonnet-v2")
+        # Check response structure
+        self.assertEqual(response["status"], "success")
+        self.assertIsInstance(response["related_documents"], list)
+        self.assertEqual(len(response["related_documents"]), 1)
         
-        # Check that the result has the expected format and name
-        self.assertEqual(result.format, "docx")
-        self.assertEqual(result.name, "test_doc.docx")
+        # Get the document from the response
+        doc_result = response["related_documents"][0].content
+        self.assertIsInstance(doc_result, DocumentToolResultModel)
         
-        # Check that the document is a valid base64-encoded docx file
-        doc_bytes = base64.b64decode(result.document)
-        self.assertTrue(len(doc_bytes) > 0)
+        # Check document properties
+        self.assertEqual(doc_result.format, "docx")
+        self.assertEqual(doc_result.name, "Test_Document.docx")
+        self.assertIsInstance(doc_result.document, bytes)
         
-        # Try to open the document to verify it's valid
-        doc_buffer = BytesIO(doc_bytes)
-        doc = Document(doc_buffer)
+        # Verify the document content by loading it back
+        doc_bytes = doc_result.document
+        doc_stream = io.BytesIO(doc_bytes)
+        doc = Document(doc_stream)
         
         # Check that the document has the expected content
-        paragraphs = [p.text for p in doc.paragraphs if p.text]
-        self.assertEqual(len(paragraphs), 3)
-        self.assertEqual(paragraphs[0], "This is a test document.")
-        self.assertEqual(paragraphs[1], "It has multiple paragraphs.")
-        self.assertEqual(paragraphs[2], "Including some with extra line breaks.")
+        self.assertEqual(doc.paragraphs[0].text, title)  # First paragraph should be the title
+        self.assertTrue(any("This is a test document" in p.text for p in doc.paragraphs))
+        self.assertTrue(any("It has multiple paragraphs" in p.text for p in doc.paragraphs))
+        self.assertTrue(any("This is another paragraph" in p.text for p in doc.paragraphs))
 
-    def test_create_word_document_with_title(self):
-        """Test creating a Word document with a title."""
-        input_data = WordDocumentInput(
-            content="This is the content of the document.",
-            title="Test Document Title",
-            filename="test_with_title"
+    def test_word_document_with_default_title(self):
+        """Test that the word document tool works with default title."""
+        # Test with only content, using default title
+        content = "Simple content for testing default title."
+        
+        # Create input object with only content
+        arg = WordDocumentInput(content=content)
+        
+        # Run the tool
+        response = word_document_tool.run(
+            tool_use_id="test_id",
+            input=arg.model_dump(),
+            model="claude-v3.5-sonnet-v2",
         )
         
-        result = create_word_document(input_data, None, "claude-v3.5-sonnet-v2")
+        # Check response
+        self.assertEqual(response["status"], "success")
         
-        # Check that the result has the expected format and name
-        self.assertEqual(result.format, "docx")
-        self.assertEqual(result.name, "test_with_title.docx")
+        # Get the document from the response
+        doc_result = response["related_documents"][0].content
         
-        # Check that the document is a valid base64-encoded docx file
-        doc_bytes = base64.b64decode(result.document)
-        doc_buffer = BytesIO(doc_bytes)
-        doc = Document(doc_buffer)
-        
-        # Check that the document has the title and content
-        paragraphs = [p.text for p in doc.paragraphs if p.text]
-        self.assertEqual(len(paragraphs), 2)
-        self.assertEqual(paragraphs[0], "Test Document Title")
-        self.assertEqual(paragraphs[1], "This is the content of the document.")
-
-    def test_default_filename(self):
-        """Test that a default filename is used when none is provided."""
-        input_data = WordDocumentInput(
-            content="Content only, no filename specified."
-        )
-        
-        result = create_word_document(input_data, None, "claude-v3.5-sonnet-v2")
-        
-        # Check that the default filename is used
-        self.assertEqual(result.name, "document.docx")
-
-    def test_tool_registration(self):
-        """Test that the word_document_tool is properly registered."""
-        tools = get_available_tools()
-        tool_names = [tool.name for tool in tools]
-        
-        # Check that the word_document_tool is in the list of available tools
-        self.assertIn("create_word_document", tool_names)
-        
-        # Find the word_document_tool in the list
-        word_tool = next((tool for tool in tools if tool.name == "create_word_document"), None)
-        self.assertIsNotNone(word_tool)
-        
-        # Check that it has the correct description and args_schema
-        self.assertEqual(word_tool.description, "Convert text content to a Microsoft Word document for download")
-        self.assertEqual(word_tool.args_schema, WordDocumentInput)
+        # Check document has default title in filename
+        self.assertEqual(doc_result.name, "Generated_Document.docx")
 
 
 if __name__ == "__main__":

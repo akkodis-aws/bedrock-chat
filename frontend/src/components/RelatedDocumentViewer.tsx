@@ -4,6 +4,7 @@ import { JSONTree } from 'react-json-tree';
 
 import { RelatedDocument } from '../@types/conversation';
 import { getAgentName } from '../features/agent/functions/formatDescription';
+import ButtonDownloadDocument from './ButtonDownloadDocument';
 
 const RelatedDocumentViewer: React.FC<{
   relatedDocument: Omit<RelatedDocument, 'sourceId'>;
@@ -31,6 +32,26 @@ const RelatedDocumentViewer: React.FC<{
     return props.relatedDocument.sourceLink;
   }, [props.relatedDocument.sourceLink, props.relatedDocument.pageNumber]);
 
+  // Check if the document has document properties (Word document)
+  const hasDocumentData = content && 'document' in content;
+  const hasDocumentFormat = content && 'format' in content;
+  const hasDocumentName = content && 'name' in content;
+  
+  // Determine if this is a downloadable document
+  const isDownloadableDocument = hasDocumentData && hasDocumentFormat && hasDocumentName;
+  
+  // Get MIME type based on format
+  const getMimeType = (format: string): string => {
+    const mimeTypes: Record<string, string> = {
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'pdf': 'application/pdf',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'csv': 'text/csv',
+      'txt': 'text/plain'
+    };
+    return mimeTypes[format] || 'application/octet-stream';
+  };
+
   return (
     <div
       className="fixed left-0 top-0 z-50 flex h-dvh w-dvw items-center justify-center bg-aws-squid-ink-light/20 dark:bg-aws-squid-ink-dark/20 transition duration-1000"
@@ -50,6 +71,21 @@ const RelatedDocumentViewer: React.FC<{
             data={content.json}
             invertTheme={false} // disable dark theme
           />
+        )}
+
+        {isDownloadableDocument && (
+          <div className="flex items-center justify-between my-2 p-2 border-t border-b">
+            <div className="flex items-center">
+              <span className="mr-2">
+                {`${content.name} (${content.format.toUpperCase()})`}
+              </span>
+            </div>
+            <ButtonDownloadDocument 
+              documentData={content.document}
+              fileName={content.name}
+              mimeType={getMimeType(content.format)}
+            />
+          </div>
         )}
 
         {(sourceName || sourceLink) && (

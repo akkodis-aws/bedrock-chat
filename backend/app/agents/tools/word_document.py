@@ -1,113 +1,93 @@
 """
 Word Document Tool
 
-This module provides a tool for converting text content to a Word document.
-It allows users to download the LLM-generated content as a Word document.
+This tool converts text content to a Microsoft Word document (.docx) format.
+It allows users to download LLM-generated content as a properly formatted Word document.
 """
 
 import io
-import base64
-from typing import Optional
+import logging
+from typing import Dict, Union
 
 from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from mypy_boto3_bedrock_runtime.literals import DocumentFormatType
+from pydantic import BaseModel, Field
 
 from app.agents.tools.agent_tool import AgentTool
+from app.repositories.models.conversation import DocumentToolResultModel
 from app.repositories.models.custom_bot import BotModel
-from app.routes.schemas.conversation import DocumentToolResult, type_model_name
-from pydantic import BaseModel, Field
+from app.routes.schemas.conversation import type_model_name
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class WordDocumentInput(BaseModel):
-    """
-    Input schema for the word document tool.
-    
-    Attributes:
-        content: The text content to be converted to a Word document.
-        title: Optional title for the Word document.
-        filename: Optional filename for the Word document (without extension).
-    """
-    content: str = Field(description="The text content to be converted to a Word document.")
-    title: Optional[str] = Field(
-        default=None, 
-        description="Optional title for the Word document. If provided, it will be added as a heading."
+    """Input schema for the word document tool."""
+    content: str = Field(
+        description="Text content to be converted to a Word document. Markdown formatting is supported."
     )
-    filename: Optional[str] = Field(
-        default="document", 
-        description="Optional filename for the Word document (without extension)."
+    title: str = Field(
+        default="Generated Document",
+        description="Title for the document. Will be used as the filename and as a heading in the document."
     )
 
 
 def create_word_document(
     arg: WordDocumentInput, bot: BotModel | None, model: type_model_name | None
-) -> DocumentToolResult:
+) -> Union[DocumentToolResultModel, Dict[str, str]]:
     """
-    Creates a Word document from the provided text content.
+    Convert text content to a Word document.
     
     Args:
-        arg: The input containing the text content and optional title and filename.
-        bot: The bot model (not used in this function).
-        model: The model name (not used in this function).
+        arg: Input containing the text content and optional title
+        bot: Bot model (not used in this tool)
+        model: Model name (not used in this tool)
         
     Returns:
-        A DocumentToolResult containing the Word document as a base64-encoded string.
+        DocumentToolResultModel: A document tool result containing the Word document
+        or Dict with error message if conversion fails
     """
-    # Create a new Word document
-    doc = Document()
-    
-    # Add title if provided
-    if arg.title:
-        title = doc.add_heading(arg.title, level=1)
-        title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    
-    # Add content paragraphs
-    for paragraph_text in arg.content.split('\n'):
-        if paragraph_text.strip():  # Skip empty paragraphs
-            paragraph = doc.add_paragraph(paragraph_text)
-            paragraph.style.font.size = Pt(11)  # Standard font size
-    
-paragraph.style.font.size = Pt(11)  # Standard font size
-    
-    # Save the document to a bytes buffer
     try:
+        # Create a new Word document
+        doc = Document()
+        
+        # Add title as heading
+        doc.add_heading(arg.title, level=1)
+        
+        # Process content - split by newlines to handle paragraphs
+        paragraphs = arg.content.split('\n')
+        for para in paragraphs:
+            if para.strip():  # Skip empty paragraphs
+                doc.add_paragraph(para)
+        
+        # Save document to a bytes buffer
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)
         
-        # Get the bytes and encode as base64
+        # Get the document as bytes
         doc_bytes = buffer.getvalue()
-        doc_base64 = base64.b64encode(doc_bytes).decode('utf-8')
-    except IOError as e:
-        raise Exception(f"Error saving document: {str(e)}")
+        
+        # Create a safe filename (replace spaces with underscores)
+        safe_filename = arg.title.replace(' ', '_')
+        
+        # Return as DocumentToolResultModel
+        return DocumentToolResultModel(
+            format="docx",
+            name=f"{safe_filename}.docx",
+            document=doc_bytes
+        )
+    
     except Exception as e:
-        raise Exception(f"Error encoding document: {str(e)}")
-    
-    # Determine filename
-    filename = arg.filename if arg.filename else "document"
-    buffer = io.BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    
-    # Get the bytes and encode as base64
-    doc_bytes = buffer.getvalue()
-    doc_base64 = base64.b64encode(doc_bytes)
-    
-    # Determine filename
-    filename = arg.filename if arg.filename else "document"
-    
-    # Return the document as a DocumentToolResult
-    return DocumentToolResult(
-        format="docx",
-        name=f"{filename}.docx",
-        document=doc_base64,
-    )
+        logger.error(f"Error creating Word document: {e}")
+        return {
+            "error": f"Failed to create Word document: {str(e)}"
+        }
 
 
 word_document_tool = AgentTool(
     name="create_word_document",
-    description="Convert text content to a Microsoft Word document for download",
+    description="Convert text content to a Microsoft Word document (.docx) that can be downloaded",
     args_schema=WordDocumentInput,
     function=create_word_document,
 )
