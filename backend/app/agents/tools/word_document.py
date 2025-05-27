@@ -68,7 +68,24 @@ def create_word_document(
             paragraph = doc.add_paragraph(paragraph_text)
             paragraph.style.font.size = Pt(11)  # Standard font size
     
+paragraph.style.font.size = Pt(11)  # Standard font size
+    
     # Save the document to a bytes buffer
+    try:
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        
+        # Get the bytes and encode as base64
+        doc_bytes = buffer.getvalue()
+        doc_base64 = base64.b64encode(doc_bytes).decode('utf-8')
+    except IOError as e:
+        raise Exception(f"Error saving document: {str(e)}")
+    except Exception as e:
+        raise Exception(f"Error encoding document: {str(e)}")
+    
+    # Determine filename
+    filename = arg.filename if arg.filename else "document"
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
