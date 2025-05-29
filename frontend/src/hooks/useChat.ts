@@ -515,6 +515,7 @@ const useChat = () => {
   const continueGenerate = (params?: {
     messageId?: string;
     bot?: BotInputType;
+    enableReasoning: boolean;
   }) => {
     setPostingMessage(true);
 
@@ -534,7 +535,7 @@ const useChat = () => {
       },
       botId: params?.bot?.botId,
       continueGenerate: true,
-      enableReasoning: false,
+      enableReasoning: params?.enableReasoning ?? false,
     };
 
     const lastMessage = messages[messages.length - 1];
