@@ -53,7 +53,7 @@ type Props = BaseProps & {
     attachments?: AttachmentType[]
   ) => void;
   onRegenerate: (enableReasoning: boolean) => void;
-  continueGenerate: () => void;
+  continueGenerate: (enabledReasoning: boolean) => void;
   supportReasoning: boolean;
   reasoningEnabled: boolean;
   onChangeReasoning: (enabled: boolean) => void;
@@ -574,7 +574,9 @@ const InputChatContent = forwardRef<HTMLElement, Props>(
                   <Button
                     className="bg-aws-paper-light p-2 text-sm dark:bg-aws-paper-dark"
                     outlined
-                    onClick={props.continueGenerate}>
+                    onClick={()=> {
+                      props.continueGenerate(reasoningEnabled);
+                    }}>
                     <PiArrowFatLineRight className="mr-2" />
                     {t('button.continue')}
                   </Button>

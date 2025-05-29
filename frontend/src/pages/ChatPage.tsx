@@ -234,8 +234,12 @@ const ChatPage: React.FC = () => {
     [inputBotParams, regenerate]
   );
 
-  const onContinueGenerate = useCallback(() => {
-    continueGenerate({ bot: inputBotParams });
+  const onContinueGenerate = useCallback(
+    (enableReasoning: boolean) => {
+      continueGenerate({
+        bot: inputBotParams,
+        enableReasoning
+      });
   }, [inputBotParams, continueGenerate]);
 
   useLayoutEffect(() => {
