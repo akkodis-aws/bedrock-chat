@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Dict, List, Optional, Tuple
 
 import boto3
 from app.user import UserGroup, UserWithoutGroups
@@ -116,4 +117,175 @@ def find_user_by_id(id: str) -> UserWithoutGroups | None:
             return None
 
         else:
+            raise
+
+
+@retry(TooManyRequestsError, tries=3, delay=1)
+def list_users(limit: int = 50, pagination_token: Optional[str] = None) -> Tuple[List[Dict], Optional[str]]:
+    """
+    List all users in the Cognito user pool with pagination support.
+    
+    Args:
+        limit: Maximum number of users to return
+        pagination_token: Token for pagination
+        
+    Returns:
+        Tuple containing list of users and next pagination token if available
+    """
+    try:
+        params = {
+            "UserPoolId": USER_POOL_ID,
+            "Limit": limit
+        }
+        
+        if pagination_token:
+            params["PaginationToken"] = pagination_token
+            
+        response = client.list_users(**params)
+        
+        return response.get("Users", []), response.get("PaginationToken")
+    
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "TooManyRequestsException":
+            logger.warning(f"Rate limit exceeded. Retrying... Error: {e}")
+            raise TooManyRequestsError()
+        else:
+            logger.error(f"Error listing users: {e}")
+            raise
+
+
+@retry(TooManyRequestsError, tries=3, delay=1)
+def get_user_with_groups(user_id: str) -> Dict:
+    """
+    Get detailed user information including group membership.
+    
+    Args:
+        user_id: The user's ID (username in Cognito)
+        
+    Returns:
+        Dictionary containing user details and group membership
+    """
+    try:
+        # Get user details
+        user_response = client.admin_get_user(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id
+        )
+        
+        # Get user groups
+        groups_response = client.admin_list_groups_for_user(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id
+        )
+        
+        # Combine the information
+        user_info = user_response
+        user_info["Groups"] = groups_response.get("Groups", [])
+        
+        return user_info
+        
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "TooManyRequestsException":
+            logger.warning(f"Rate limit exceeded. Retrying... Error: {e}")
+            raise TooManyRequestsError()
+        elif e.response["Error"]["Code"] == "UserNotFoundException":
+            logger.warning(f"User not found: {user_id}")
+            raise
+        else:
+            logger.error(f"Error getting user details: {e}")
+            raise
+
+
+@retry(TooManyRequestsError, tries=3, delay=1)
+def enable_user(user_id: str) -> None:
+    """
+    Enable a user in the Cognito user pool.
+    
+    Args:
+        user_id: The user's ID (username in Cognito)
+    """
+    try:
+        client.admin_enable_user(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "TooManyRequestsException":
+            logger.warning(f"Rate limit exceeded. Retrying... Error: {e}")
+            raise TooManyRequestsError()
+        else:
+            logger.error(f"Error enabling user: {e}")
+            raise
+
+
+@retry(TooManyRequestsError, tries=3, delay=1)
+def disable_user(user_id: str) -> None:
+    """
+    Disable a user in the Cognito user pool.
+    
+    Args:
+        user_id: The user's ID (username in Cognito)
+    """
+    try:
+        client.admin_disable_user(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "TooManyRequestsException":
+            logger.warning(f"Rate limit exceeded. Retrying... Error: {e}")
+            raise TooManyRequestsError()
+        else:
+            logger.error(f"Error disabling user: {e}")
+            raise
+
+
+@retry(TooManyRequestsError, tries=3, delay=1)
+def reset_user_password(user_id: str, temporary_password: str) -> None:
+    """
+    Reset a user's password in the Cognito user pool.
+    
+    Args:
+        user_id: The user's ID (username in Cognito)
+        temporary_password: The temporary password to set
+    """
+    try:
+        client.admin_set_user_password(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id,
+            Password=temporary_password,
+            Permanent=False  # Force user to change password on next login
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "TooManyRequestsException":
+            logger.warning(f"Rate limit exceeded. Retrying... Error: {e}")
+            raise TooManyRequestsError()
+        else:
+            logger.error(f"Error resetting user password: {e}")
+            raise
+
+
+@retry(TooManyRequestsError, tries=3, delay=1)
+def get_user_status(user_id: str) -> str:
+    """
+    Get the status of a user (enabled or disabled).
+    
+    Args:
+        user_id: The user's ID (username in Cognito)
+        
+    Returns:
+        String indicating user status ("ENABLED" or "DISABLED")
+    """
+    try:
+        response = client.admin_get_user(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id
+        )
+        return response.get("Enabled", False)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "TooManyRequestsException":
+            logger.warning(f"Rate limit exceeded. Retrying... Error: {e}")
+            raise TooManyRequestsError()
+        else:
+            logger.error(f"Error getting user status: {e}")
             raise

@@ -24,6 +24,8 @@ import {
   PiPresentationChart,
   PiRobot,
   PiTrash,
+  PiUserCircle,
+  PiUsers,
   PiX,
 } from 'react-icons/pi';
 import LazyOutputText from './LazyOutputText';
