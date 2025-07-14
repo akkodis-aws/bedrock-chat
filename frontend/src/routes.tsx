@@ -7,6 +7,7 @@ import BotApiSettingsPage from './pages/BotApiSettingsPage.tsx';
 import AdminSharedBotAnalyticsPage from './pages/AdminSharedBotAnalyticsPage.tsx';
 import AdminApiManagementPage from './pages/AdminApiManagementPage.tsx';
 import AdminBotManagementPage from './pages/AdminBotManagementPage.tsx';
+import AdminUserManagementPage from './pages/AdminUserManagementPage.tsx';
 import { useTranslation } from 'react-i18next';
 import {
   createBrowserRouter,
@@ -70,6 +71,10 @@ const rootChildren = [
     element: <AdminApiManagementPage />,
   },
   {
+    path: '/admin/users',
+    element: <AdminUserManagementPage />,
+  },
+  {
     path: '/admin/bot/:botId',
     element: <AdminBotManagementPage />,
   },
@@ -110,6 +115,10 @@ export const usePageLabel = () => {
     {
       path: '/admin/api-management',
       label: t('admin.apiManagement.label.pageTitle'),
+    },
+    {
+      path: '/admin/users',
+      label: t('admin.users.title'),
     },
   ];
 
