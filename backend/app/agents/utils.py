@@ -4,6 +4,7 @@ from app.agents.tools.agent_tool import AgentTool
 from app.agents.tools.internet_search import internet_search_tool
 from app.agents.tools.bedrock_agent import bedrock_agent_tool, BedrockAgent
 from app.agents.tools.knowledge import create_knowledge_tool
+from app.agents.tools.word_document import word_document_tool
 from app.repositories.models.custom_bot import BotModel
 import logging
 
@@ -15,6 +16,7 @@ def get_available_tools() -> list[AgentTool]:
     tools: list[AgentTool] = []
     tools.append(internet_search_tool)
     tools.append(bedrock_agent_tool)
+    tools.append(word_document_tool)
     return tools
 
 

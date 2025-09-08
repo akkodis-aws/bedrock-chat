@@ -15,6 +15,7 @@ import useToolCardExpand from '../hooks/useToolCardExpand';
 import { AgentToolResultContent, RelatedDocument } from '../../../@types/conversation';
 import { getAgentName } from '../functions/formatDescription';
 import RelatedDocumentViewer from '../../../components/RelatedDocumentViewer';
+import ButtonDownloadDocument from '../../../components/ButtonDownloadDocument';
 
 // Theme of JSONTree
 // NOTE: need to set the theme as base16 style
@@ -159,6 +160,26 @@ const ToolCard: React.FC<ToolCardProps> = ({
   }> = ({
     relatedDocument: document,
   }) => {
+    // Check if the document has a document property (Word document)
+    const hasDocumentData = document.content && 'document' in document.content;
+    const hasDocumentFormat = document.content && 'format' in document.content;
+    const hasDocumentName = document.content && 'name' in document.content;
+    
+    // Determine if this is a downloadable document
+    const isDownloadableDocument = hasDocumentData && hasDocumentFormat && hasDocumentName;
+    
+    // Get MIME type based on format
+    const getMimeType = (format: string): string => {
+      const mimeTypes: Record<string, string> = {
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'pdf': 'application/pdf',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'csv': 'text/csv',
+        'txt': 'text/plain'
+      };
+      return mimeTypes[format] || 'application/octet-stream';
+    };
+
     return (
       <div className="flex flex-col">
         {document.sourceName && document.sourceName !== name && (
@@ -201,6 +222,18 @@ const ToolCard: React.FC<ToolCardProps> = ({
             invertTheme={false} // disable dark theme
             shouldExpandNodeInitially={() => false}
           />
+        )}
+        {isDownloadableDocument && (
+          <div className="flex items-center mt-1">
+            <span className="mr-2 text-sm">
+              {`${document.content.name} (${document.content.format.toUpperCase()})`}
+            </span>
+            <ButtonDownloadDocument 
+              documentData={document.content.document}
+              fileName={document.content.name}
+              mimeType={getMimeType(document.content.format)}
+            />
+          </div>
         )}
       </div>
     );
